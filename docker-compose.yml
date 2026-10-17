@@ -1,0 +1,116 @@
+services:
+  # ==========================================
+  # 1. DATABASE SERVICE
+  # ==========================================
+  db:
+    image: postgres:16-alpine
+    container_name: givetrack-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-givetrack_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-givetrack_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - givetrack-net
+
+  # ==========================================
+  # 2. ONE-SHOT MIGRATION & SEED RUNNER
+  # ==========================================
+  migrate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: givetrack-migrate
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-givetrack_db}
+      NODE_ENV: production
+    command: sh -c "npx tsx db/migrate.ts && npx tsx db/seed.ts"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - givetrack-net
+
+  # ==========================================
+  # 3. NEXT.JS APPLICATION (STANDALONE RUNNER)
+  # ==========================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: givetrack-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-givetrack_db}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-for-givetrack-operations-platform-2024}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - givetrack-net
+
+  # ==========================================
+  # 4. CONCURRENCY STRESS TEST PROFILE
+  # Usage: docker compose --profile test run --rm test
+  # ==========================================
+  test:
+    profiles: ["test"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: givetrack-test
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-givetrack_db}
+    command: npx tsx db/tests/concurrency-test.ts
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - givetrack-net
+
+  # ==========================================
+  # 5. PGADMIN TOOL PROFILE
+  # Usage: docker compose --profile tools up pgadmin
+  # ==========================================
+  pgadmin:
+    profiles: ["tools"]
+    image: dpage/pgadmin4:latest
+    container_name: givetrack-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@givetrack.org
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - givetrack-net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  givetrack-net:
+    driver: bridge

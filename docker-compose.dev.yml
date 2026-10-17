@@ -1,0 +1,19 @@
+services:
+  db:
+    ports:
+      - "5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    command: npm run dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-givetrack_db}
+      JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-for-givetrack-operations-platform-2024}
