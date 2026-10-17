@@ -15,7 +15,12 @@ import {
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const campaigns = await getAllCampaigns();
+  let campaigns: any[] = [];
+  try {
+    campaigns = await getAllCampaigns();
+  } catch {
+    campaigns = [];
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">

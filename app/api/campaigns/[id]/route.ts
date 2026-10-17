@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCampaignFinancialSummary } from '@/lib/ledger';
 import { getCampaignAllocations } from '@/lib/inventory';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }

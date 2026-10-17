@@ -3,6 +3,8 @@ import { authenticateRouteHandler } from '@/lib/rbac';
 import { CreateDisbursementSchema } from '@/lib/validators';
 import { createDisbursementRequest, getDisbursementRequests } from '@/lib/ledger';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Only volunteer and admin can list disbursement requests
   const auth = await authenticateRouteHandler(request, ['volunteer', 'admin']);

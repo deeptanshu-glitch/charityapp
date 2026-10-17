@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRouteHandler } from '@/lib/rbac';
 import { getDonorContributions } from '@/lib/ledger';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   // Allow any authenticated user to view their own contributions
   const auth = await authenticateRouteHandler(request, ['donor', 'volunteer', 'admin']);

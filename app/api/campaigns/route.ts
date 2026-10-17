@@ -4,6 +4,8 @@ import { authenticateRouteHandler } from '@/lib/rbac';
 import { query } from '@/lib/db';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const CreateCampaignSchema = z.object({
   title: z.string().min(3).max(255),
   description: z.string().min(10),

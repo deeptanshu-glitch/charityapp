@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRouteHandler } from '@/lib/rbac';
 import { getInventoryTransactions } from '@/lib/inventory';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   const auth = await authenticateRouteHandler(request, ['volunteer', 'admin']);
   if ('response' in auth) {
